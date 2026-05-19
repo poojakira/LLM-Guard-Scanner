@@ -1,0 +1,3 @@
+# No external dependencies - pure Python regex-based scanner
+# Optional for development:
+# pytest==8.2.0
