@@ -100,14 +100,13 @@ def detect_prompt_injection(text: str, threshold: float = 0.5) -> DetectionResul
     Returns:
         DetectionResult with classification and matched patterns
     """
-    text_lower = text.lower()
     matched = []
     max_confidence = 0.0
     detected_category = "none"
 
     for category, patterns in CATEGORY_PATTERNS.items():
         for pattern in patterns:
-            if re.search(pattern, text_lower):
+            if re.search(pattern, text, flags=re.IGNORECASE):
                 matched.append(f"{category}: {pattern}")
                 weight = CATEGORY_WEIGHTS[category]
                 if weight > max_confidence:

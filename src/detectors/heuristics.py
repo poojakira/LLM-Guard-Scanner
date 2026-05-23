@@ -1,7 +1,7 @@
-""""""Token-level heuristics for injection detection.""""""
+"""Token-level heuristics for injection detection."""
 
 def suspicious_token_ratio(text):
-    """"""Flag inputs with high ratio of control/instruction tokens vs content.""""""
+    """Flag inputs with high ratio of control/instruction tokens vs content."""
     instruction_words = {'ignore', 'forget', 'override', 'disregard', 'bypass',
                          'system', 'prompt', 'instruction', 'rule', 'restrict'}
     words = text.lower().split()
