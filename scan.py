@@ -41,7 +41,7 @@ def main():
 
     elif args.file:
         with open(args.file) as f:
-            lines = [l.strip() for l in f if l.strip()]
+            lines = [line.strip() for line in f if line.strip()]
         blocked, total = 0, len(lines)
         for line in lines:
             result = detect_prompt_injection(line, threshold=args.threshold)

@@ -1,42 +1,43 @@
 """
-ML-based prompt injection classifier using DeBERTa.
+Optional transformer-based prompt injection classifier.
 
-Replaces regex-only detection with a fine-tuned transformer classifier
-that understands semantic injection patterns, not just string matching.
+The default path is a lightweight heuristic fallback. Set enable_model=True
+and install requirements-ml.txt to load a Hugging Face sequence classifier.
 """
-
-import numpy as np
-from typing import Optional
 
 
 class InjectionClassifier:
-    """DeBERTa-based prompt injection detector.
+    """Prompt injection detector with optional transformer inference."""
 
-    Uses a fine-tuned microsoft/deberta-v3-base model trained on:
-    - deepset/prompt-injections
-    - JasperLS/prompt-injections
-    - Custom augmented multilingual samples
-
-    Falls back to heuristic scoring if model unavailable.
-    """
-
-    def __init__(self, model_path: str = "protectai/deberta-v3-base-prompt-injection-v2", threshold: float = 0.85):
+    def __init__(
+        self,
+        model_path: str = "protectai/deberta-v3-base-prompt-injection-v2",
+        threshold: float = 0.85,
+        enable_model: bool = False,
+    ):
         self.threshold = threshold
+        self.enable_model = enable_model
         self._model = None
         self._tokenizer = None
+        self._load_attempted = False
+        self._model_error = None
         self.model_path = model_path
 
     def _load_model(self):
-        if self._model is not None:
+        if self._model is not None or self._load_attempted:
+            return
+        self._load_attempted = True
+        if not self.enable_model:
+            self._model_error = "disabled"
             return
         try:
             from transformers import AutoTokenizer, AutoModelForSequenceClassification
-            import torch
 
             self._tokenizer = AutoTokenizer.from_pretrained(self.model_path)
             self._model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
             self._model.eval()
-        except (ImportError, OSError):
+        except (ImportError, OSError) as exc:
+            self._model_error = exc.__class__.__name__
             self._model = None
 
     def classify(self, text: str) -> dict:
@@ -71,7 +72,7 @@ class InjectionClassifier:
         injection_signals = [
             "ignore previous", "ignore above", "disregard", "forget your instructions",
             "you are now", "new instructions", "system prompt", "reveal your",
-            "act as", "pretend you", "jailbreak", "DAN mode",
+            "act as", "pretend you", "jailbreak", "dan mode",
         ]
         text_lower = text.lower()
         matches = sum(1 for sig in injection_signals if sig in text_lower)

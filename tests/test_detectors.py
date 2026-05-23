@@ -1,5 +1,4 @@
 """Tests for prompt injection detector."""
-import pytest
 import sys
 sys.path.insert(0, ".")
 from src.detectors import detect_prompt_injection
