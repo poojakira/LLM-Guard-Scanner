@@ -14,6 +14,8 @@ arXiv: 2302.12173
 import re
 from dataclasses import dataclass, field
 
+from .normalization import detection_variants
+
 
 @dataclass
 class RAGScanResult:
@@ -64,21 +66,29 @@ def scan_retrieved_document(document: str, source: str = "unknown") -> RAGScanRe
     findings = []
     max_score = 0.0
 
-    # Check for indirect injection patterns
-    for pattern in INDIRECT_INJECTION_PATTERNS:
-        matches = re.findall(pattern, document)
-        if matches:
-            findings.append(f"Indirect injection pattern: {pattern[:50]}... ({len(matches)} match)")
-            max_score = max(max_score, 0.9)
+    variants = detection_variants(document)
 
-    # Check structural anomalies
-    for pattern in STRUCTURAL_ANOMALIES:
-        if re.search(pattern, document):
-            findings.append(f"Structural anomaly: {pattern[:50]}...")
-            max_score = max(max_score, 0.7)
+    # Check for indirect injection patterns
+    for variant_index, candidate in enumerate(variants):
+        source_note = " decoded" if variant_index else ""
+        for pattern in INDIRECT_INJECTION_PATTERNS:
+            matches = re.findall(pattern, candidate)
+            if matches:
+                findings.append(
+                    f"Indirect injection{source_note} pattern: {pattern[:50]}..."
+                    f" ({len(matches)} match)"
+                )
+                max_score = max(max_score, 0.9)
+
+        # Check structural anomalies
+        for pattern in STRUCTURAL_ANOMALIES:
+            if re.search(pattern, candidate):
+                findings.append(f"Structural{source_note} anomaly: {pattern[:50]}...")
+                max_score = max(max_score, 0.7)
 
     # Heuristic: high ratio of imperative sentences (commands) is suspicious
-    sentences = [s.strip() for s in re.split(r'[.!?]', document) if s.strip()]
+    canonical_document = variants[0] if variants else document
+    sentences = [s.strip() for s in re.split(r'[.!?]', canonical_document) if s.strip()]
     if sentences:
         imperative_keywords = ["ignore", "forget", "override", "respond", "say",
                                "tell", "output", "include", "append", "return"]
