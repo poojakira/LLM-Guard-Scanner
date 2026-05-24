@@ -17,6 +17,8 @@ Detection methods:
 import re
 from dataclasses import dataclass
 
+from .normalization import detection_variants
+
 
 @dataclass
 class DetectionResult:
@@ -104,14 +106,22 @@ def detect_prompt_injection(text: str, threshold: float = 0.5) -> DetectionResul
     max_confidence = 0.0
     detected_category = "none"
 
-    for category, patterns in CATEGORY_PATTERNS.items():
-        for pattern in patterns:
-            if re.search(pattern, text, flags=re.IGNORECASE):
-                matched.append(f"{category}: {pattern}")
-                weight = CATEGORY_WEIGHTS[category]
-                if weight > max_confidence:
-                    max_confidence = weight
-                    detected_category = category
+    for variant_index, candidate in enumerate(detection_variants(text)):
+        source = "decoded" if variant_index else "canonical"
+        for category, patterns in CATEGORY_PATTERNS.items():
+            for pattern in patterns:
+                if re.search(pattern, candidate, flags=re.IGNORECASE):
+                    match = f"{category}: {pattern}"
+                    if source == "decoded":
+                        match = f"{match} ({source})"
+                    if match not in matched:
+                        matched.append(match)
+                    weight = CATEGORY_WEIGHTS[category]
+                    if source == "decoded":
+                        weight = min(weight + 0.05, 1.0)
+                    if weight > max_confidence:
+                        max_confidence = weight
+                        detected_category = category
 
     # Multiple pattern matches increase confidence
     if len(matched) > 1:
