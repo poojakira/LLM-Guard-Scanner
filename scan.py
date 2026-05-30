@@ -34,10 +34,10 @@ def main():
                               "patterns": result.matched_patterns}, indent=2))
         else:
             status = "BLOCKED" if result.is_injection else "PASS"
-            print(f"[{status}] Confidence: {result.confidence:.0%} | Category: {result.category}")
+            import logging; logging.info(f"[{status}] Confidence: {result.confidence:.0%} | Category: {result.category}")
             if result.matched_patterns:
                 for p in result.matched_patterns:
-                    print(f"  - {p}")
+                    import logging; logging.info(f"  - {p}")
 
     elif args.file:
         with open(args.file) as f:
@@ -47,8 +47,8 @@ def main():
             result = detect_prompt_injection(line, threshold=args.threshold)
             if result.is_injection:
                 blocked += 1
-                print(f"  [BLOCKED] {line[:80]}... ({result.category})")
-        print(f"\nResults: {blocked}/{total} blocked ({100*blocked/total:.1f}%)")
+                import logging; logging.info(f"  [BLOCKED] {line[:80]}... ({result.category})")
+        import logging; logging.info(f"\nResults: {blocked}/{total} blocked ({100*blocked/total:.1f}%)")
 
     elif args.output_scan:
         result = scan_output(args.output_scan)
@@ -57,9 +57,9 @@ def main():
                               "violations": result.violations}, indent=2))
         else:
             status = "SAFE" if result.is_safe else "VIOLATION"
-            print(f"[{status}]")
+            import logging; logging.info(f"[{status}]")
             for v in result.violations:
-                print(f"  - {v}")
+                import logging; logging.info(f"  - {v}")
 
     elif args.rag_scan:
         with open(args.rag_scan) as f:
@@ -71,9 +71,9 @@ def main():
                               "findings": result.findings}, indent=2))
         else:
             status = "POISONED" if result.is_poisoned else "CLEAN"
-            print(f"[{status}] Risk: {result.risk_score:.0%}")
+            import logging; logging.info(f"[{status}] Risk: {result.risk_score:.0%}")
             for f_item in result.findings:
-                print(f"  - {f_item}")
+                import logging; logging.info(f"  - {f_item}")
     else:
         parser.print_help()
 

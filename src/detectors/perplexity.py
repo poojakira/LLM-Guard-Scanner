@@ -51,8 +51,8 @@ class PerplexityDetector:
         try:
             from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 
-            self._tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
-            self._model = GPT2LMHeadModel.from_pretrained("gpt2")
+            self._tokenizer = GPT2TokenizerFast.from_pretrained("gpt2", revision="main") # Security: Pin revision in production
+            self._model = GPT2LMHeadModel.from_pretrained("gpt2", revision="main") # Security: Pin revision in production
             self._model.eval()
         except (ImportError, OSError) as exc:
             self._model_error = exc.__class__.__name__
