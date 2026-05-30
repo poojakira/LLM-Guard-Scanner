@@ -33,8 +33,8 @@ class InjectionClassifier:
         try:
             from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_path)
-            self._model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
+            self._tokenizer = AutoTokenizer.from_pretrained(self.model_path, revision="main") # Security: Pin revision in production
+            self._model = AutoModelForSequenceClassification.from_pretrained(self.model_path, revision="main") # Security: Pin revision in production
             self._model.eval()
         except (ImportError, OSError) as exc:
             self._model_error = exc.__class__.__name__
