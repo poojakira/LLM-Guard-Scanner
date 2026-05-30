@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .env
 venv/
+sbom.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
