@@ -5,8 +5,8 @@ Injects a unique canary into the system prompt. If the canary appears
 in the LLM output, it indicates a prompt extraction attack.
 """
 
-import uuid
 import re
+import uuid
 
 
 class CanaryDetector:
@@ -24,10 +24,7 @@ class CanaryDetector:
         """Check if LLM output contains the canary (extraction attack)."""
         leaked = self.canary in output
         # Also check for partial leaks (attacker might get fragments)
-        partial = any(
-            chunk in output
-            for chunk in [self.canary[:8], self.canary[-8:]]
-        )
+        partial = any(chunk in output for chunk in [self.canary[:8], self.canary[-8:]])
 
         return {
             "canary_leaked": leaked,
@@ -46,6 +43,10 @@ class CanaryDetector:
 
         for pattern in extraction_patterns:
             if re.search(pattern, user_input):
-                return {"is_extraction_attempt": True, "matched_pattern": pattern, "method": "canary-extraction"}
+                return {
+                    "is_extraction_attempt": True,
+                    "matched_pattern": pattern,
+                    "method": "canary-extraction",
+                }
 
         return {"is_extraction_attempt": False, "method": "canary-extraction"}

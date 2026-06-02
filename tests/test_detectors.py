@@ -1,9 +1,10 @@
 """Tests for prompt injection detector."""
+
 import sys
+
 sys.path.insert(0, ".")
-from src.detectors import detect_prompt_injection
+from src.detectors import detect_prompt_injection, scan_retrieved_document
 from src.guardrails import scan_output
-from src.detectors import scan_retrieved_document
 
 
 class TestInjectionDetector:

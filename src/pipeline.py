@@ -37,8 +37,12 @@ class LLMGuardPipeline:
         perplexity_sigma: float = 3.0,
         enable_ml: bool = False,
     ):
-        self.classifier = InjectionClassifier(threshold=classifier_threshold, enable_model=enable_ml)
-        self.perplexity = PerplexityDetector(threshold_sigma=perplexity_sigma, enable_model=enable_ml)
+        self.classifier = InjectionClassifier(
+            threshold=classifier_threshold, enable_model=enable_ml
+        )
+        self.perplexity = PerplexityDetector(
+            threshold_sigma=perplexity_sigma, enable_model=enable_ml
+        )
         self.canary = CanaryDetector()
 
     def scan_input(self, text: str) -> ScanResult:
@@ -65,7 +69,9 @@ class LLMGuardPipeline:
             risk_score = max(risk_score, 0.9)
 
         is_blocked = risk_score >= 0.85
-        recommendation = "block" if is_blocked else "warn" if risk_score > 0.5 else "allow"
+        recommendation = (
+            "block" if is_blocked else "warn" if risk_score > 0.5 else "allow"
+        )
 
         return ScanResult(
             is_blocked=is_blocked,
@@ -96,7 +102,9 @@ class LLMGuardPipeline:
             risk_score = max(risk_score, self._output_risk(guardrail_result.violations))
 
         is_blocked = risk_score >= 0.85
-        recommendation = "block" if is_blocked else "warn" if risk_score > 0.0 else "allow"
+        recommendation = (
+            "block" if is_blocked else "warn" if risk_score > 0.0 else "allow"
+        )
         return ScanResult(
             is_blocked=is_blocked,
             risk_score=round(risk_score, 4),
@@ -122,7 +130,9 @@ class LLMGuardPipeline:
                 risk_score = max(risk_score, result.risk_score)
 
         is_blocked = risk_score >= 0.85
-        recommendation = "block" if is_blocked else "warn" if risk_score > 0.0 else "allow"
+        recommendation = (
+            "block" if is_blocked else "warn" if risk_score > 0.0 else "allow"
+        )
         return ScanResult(
             is_blocked=is_blocked,
             risk_score=round(risk_score, 4),
@@ -132,7 +142,9 @@ class LLMGuardPipeline:
 
     @staticmethod
     def _output_risk(violations: list[str]) -> float:
-        if any(v.startswith("SECRET:") or v.startswith("SYSTEM_LEAK:") for v in violations):
+        if any(
+            v.startswith("SECRET:") or v.startswith("SYSTEM_LEAK:") for v in violations
+        ):
             return 1.0
         if any(v.startswith("PII:") for v in violations):
             return 0.85

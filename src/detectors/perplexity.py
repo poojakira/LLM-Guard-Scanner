@@ -68,7 +68,9 @@ class PerplexityDetector:
 
         import torch
 
-        encodings = self._tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+        encodings = self._tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=512
+        )
         input_ids = encodings["input_ids"]
 
         with torch.no_grad():
@@ -104,5 +106,8 @@ class PerplexityDetector:
         freq = {}
         for c in text:
             freq[c] = freq.get(c, 0) + 1
-        entropy = -sum((count / len(text)) * math.log2(count / len(text)) for count in freq.values())
+        entropy = -sum(
+            (count / len(text)) * math.log2(count / len(text))
+            for count in freq.values()
+        )
         return 2 ** (entropy * 3)

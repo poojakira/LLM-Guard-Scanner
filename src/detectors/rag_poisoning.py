@@ -11,6 +11,7 @@ Reference: Greshake et al., "Not what you've signed up for: Compromising
 Real-World LLM-Integrated Applications with Indirect Prompt Injection" (2023)
 arXiv: 2302.12173
 """
+
 import re
 from dataclasses import dataclass, field
 
@@ -88,18 +89,33 @@ def scan_retrieved_document(document: str, source: str = "unknown") -> RAGScanRe
 
     # Heuristic: high ratio of imperative sentences (commands) is suspicious
     canonical_document = variants[0] if variants else document
-    sentences = [s.strip() for s in re.split(r'[.!?]', canonical_document) if s.strip()]
+    sentences = [s.strip() for s in re.split(r"[.!?]", canonical_document) if s.strip()]
     if sentences:
-        imperative_keywords = ["ignore", "forget", "override", "respond", "say",
-                               "tell", "output", "include", "append", "return"]
+        imperative_keywords = [
+            "ignore",
+            "forget",
+            "override",
+            "respond",
+            "say",
+            "tell",
+            "output",
+            "include",
+            "append",
+            "return",
+        ]
         imperative_count = sum(
-            1 for s in sentences
-            if any(s.lower().startswith(kw) or f" {kw} " in s.lower()
-                   for kw in imperative_keywords)
+            1
+            for s in sentences
+            if any(
+                s.lower().startswith(kw) or f" {kw} " in s.lower()
+                for kw in imperative_keywords
+            )
         )
         imperative_ratio = imperative_count / len(sentences)
         if imperative_ratio > 0.3:
-            findings.append(f"High imperative ratio: {imperative_ratio:.0%} of sentences are commands")
+            findings.append(
+                f"High imperative ratio: {imperative_ratio:.0%} of sentences are commands"
+            )
             max_score = max(max_score, 0.6)
 
     return RAGScanResult(

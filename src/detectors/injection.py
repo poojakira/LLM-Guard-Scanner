@@ -14,6 +14,7 @@ Detection methods:
 4. Delimiter injection (closing system prompts)
 5. Context switching (abrupt topic changes with commands)
 """
+
 import re
 from dataclasses import dataclass
 
