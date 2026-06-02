@@ -1,15 +1,17 @@
 """
-RAG Poisoning Detector (OWASP LLM03 - Training Data Poisoning, applied to retrieval)
+RAG Poisoning Detector (OWASP LLM03 — Training Data Poisoning, applied to retrieval)
 
-Detects indirect prompt injection in retrieved documents that could
-manipulate LLM behavior when used as context in RAG pipelines.
+Detects indirect prompt injection in retrieved documents that could manipulate
+LLM behavior when the document is inserted into a RAG context window.
 
-Attack vector: Attacker plants malicious instructions in documents that
-get retrieved and injected into the LLM context window.
+Attack vector:
+  Attacker plants malicious instructions in documents. Those documents get
+  retrieved and fed to the LLM as "trusted" context, bypassing input filters.
 
-Reference: Greshake et al., "Not what you've signed up for: Compromising
-Real-World LLM-Integrated Applications with Indirect Prompt Injection" (2023)
-arXiv: 2302.12173
+Reference:
+  Greshake et al., "Not what you've signed up for: Compromising Real-World
+  LLM-Integrated Applications with Indirect Prompt Injection" (2023)
+  arXiv:2302.12173
 """
 
 import re
@@ -21,35 +23,32 @@ from .normalization import detection_variants
 @dataclass
 class RAGScanResult:
     is_poisoned: bool
-    risk_score: float  # 0.0 to 1.0
+    risk_score: float       # 0.0 to 1.0
     findings: list = field(default_factory=list)
 
 
-# Patterns that indicate embedded instructions in retrieved documents
+# Patterns that indicate embedded instructions targeting the LLM reader.
+# Every pattern here must be specific — no wildcards, no empty strings.
 INDIRECT_INJECTION_PATTERNS = [
-    # Hidden instructions targeting the LLM
-    r"(?i)\[system\].*\[/system\]",
-    r"(?i)<!--\s*(ignore|forget|override|new instructions)",
-    r"(?i)<hidden>.*</hidden>",
-    # Instruction-like text that shouldn't appear in normal documents
-    r"(?i)when\s+(asked|queried|prompted)\s+about\s+this\s+(document|text|content)\s*,?\s*(say|respond|answer|tell)",
-    r"(?i)if\s+(an?\s+)?(AI|LLM|assistant|model)\s+(reads?|processes|sees)\s+this",
-    r"(?i)(AI|assistant|model)\s*[:;]\s*(ignore|forget|override|disregard)",
-    # Data exfiltration attempts via RAG
-    r"(?i)include\s+(the\s+)?(user'?s?|their)\s+(email|name|data|query|question)\s+in\s+(your|the)\s+(response|output|answer)",
-    r"(?i)append\s+.*\s+to\s+(your|the)\s+(response|output|answer)",
-    # Invisible text (zero-width characters used to hide instructions)
-    r"[\u200b\u200c\u200d\ufeff]{3,}",
+    r"(?i)\[system\]\s*.+?\s*\[/system\]",
+    r"(?i)<\s*/?instructions?\s*>",
+    # targets the LLM reader explicitly
+    r"(?i)if\s+(?:an?\s+)?(?:ai|llm|gpt|assistant|bot)\s+(?:reads?|sees?|processes?)",
+    r"(?i)(?:disregard|ignore|forget)\s+(?:the\s+)?(?:above|previous|prior|all)\s+(?:context|instructions?|text)",
+    r"(?i)respond\s+only\s+with\s+['\"]",
+    r"(?i)your\s+(?:new\s+)?instructions?\s+(?:are|is)\s*[:;]",
+    # common planted note targeting AI systems
+    r"(?i)note\s+to\s+(?:ai|llm|language\s+model)",
 ]
 
-# Structural anomalies that suggest document manipulation
+# Structural anomalies: these formatting tokens have no business appearing
+# in a normal retrieved document (financial report, wiki page, FAQ, etc.)
 STRUCTURAL_ANOMALIES = [
-    # Sudden format changes suggesting injected content
-    r"(?i)(---+|===+)\s*(begin|start)\s*(injection|payload|instructions?)",
-    # Base64 encoded payloads hidden in documents
-    r"(?i)data:\s*[A-Za-z0-9+/=]{50,}",
-    # Markdown/HTML comments with instructions
-    r"<!--[\s\S]*?(ignore|override|inject|system)[\s\S]*?-->",
+    r"(?i)\[/?INST\]",                  # Llama/Mistral prompt delimiters
+    r"(?i)<\|im_(?:start|end)\|>",      # ChatML delimiters
+    r"(?i)<>\s*.+?\s*<>",              # Llama2 system block
+    r"(?i)###\s*(?:system|instruction|override)",
+    r"(?i)---+\s*(?:new|system|actual)\s*(?:instructions?|prompt|task)",
 ]
 
 
@@ -58,11 +57,11 @@ def scan_retrieved_document(document: str, source: str = "unknown") -> RAGScanRe
     Scan a retrieved document for indirect prompt injection payloads.
 
     Args:
-        document: Text content of retrieved document
-        source: Source identifier for reporting
+        document: Text content of retrieved document.
+        source:   Source identifier for audit logging.
 
     Returns:
-        RAGScanResult with poisoning assessment
+        RAGScanResult with poisoning assessment and matched findings.
     """
     findings = []
     max_score = 0.0

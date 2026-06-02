@@ -1,13 +1,13 @@
 """
-Unified LLM Guard pipeline - combines available detectors into a single scan.
+Unified LLM Guard pipeline — combines all detectors into a single scan pass.
 
-Covers OWASP LLM Top 10:
-- LLM01: Prompt Injection (optional classifier + regex-style heuristic)
-- LLM02: Insecure Output (canary + output scanner)
-- LLM03: Training Data Poisoning (RAG poisoning detector)
-- LLM06: Sensitive Information Disclosure (canary extraction)
-- LLM07: Insecure Plugin Design (input validation)
-- LLM09: Overreliance (confidence scoring)
+OWASP LLM coverage:
+  LLM01  Prompt Injection           (classifier + heuristic regex)
+  LLM02  Insecure Output Handling   (canary token + output scanner)
+  LLM03  Training Data Poisoning    (RAG poisoning detector on retrieved chunks)
+  LLM06  Sensitive Information      (canary extraction check)
+  LLM07  Insecure Plugin Design     (input validation before tool dispatch)
+  LLM09  Overreliance               (confidence gating)
 """
 
 from dataclasses import dataclass, field
@@ -26,10 +26,13 @@ class ScanResult:
     risk_score: float
     detections: list[dict[str, Any]] = field(default_factory=list)
     recommendation: str = "allow"
+    # redacted_output is populated when output scanning redacts sensitive content;
+    # callers should serve this instead of the raw LLM response when is_blocked=True
+    redacted_output: str = ""
 
 
 class LLMGuardPipeline:
-    """Unified scanning pipeline combining optional ML and heuristic detectors."""
+    """Unified scanning pipeline combining optional ML detectors and heuristics."""
 
     def __init__(
         self,
@@ -46,23 +49,23 @@ class LLMGuardPipeline:
         self.canary = CanaryDetector()
 
     def scan_input(self, text: str) -> ScanResult:
-        """Scan user input before sending to LLM."""
-        detections = []
+        """Scan user input before it is forwarded to the LLM."""
+        detections: list[dict[str, Any]] = []
         risk_score = 0.0
 
-        # 1. Optional classifier; defaults to heuristic fallback.
+        # 1. Optional transformer classifier; falls back to keyword heuristic
         cls_result = self.classifier.classify(text)
         if cls_result["is_injection"]:
             detections.append({"detector": "classifier", **cls_result})
             risk_score = max(risk_score, cls_result["confidence"])
 
-        # 2. Optional GPT-2 perplexity; defaults to entropy fallback.
+        # 2. Optional GPT-2 perplexity; falls back to character-entropy estimate
         ppl_result = self.perplexity.detect(text)
         if ppl_result["is_anomalous"]:
             detections.append({"detector": "perplexity", **ppl_result})
             risk_score = max(risk_score, 0.7)
 
-        # 3. Canary extraction attempt.
+        # 3. Canary extraction probe — did the user ask to see the system prompt?
         ext_result = self.canary.check_input_for_extraction(text)
         if ext_result["is_extraction_attempt"]:
             detections.append({"detector": "canary", **ext_result})
@@ -81,15 +84,17 @@ class LLMGuardPipeline:
         )
 
     def scan_output(self, output: str) -> ScanResult:
-        """Scan LLM output for data leakage."""
-        detections = []
-        canary_result = self.canary.check_output(output)
+        """Scan LLM output for data leakage before returning it to the caller."""
+        detections: list[dict[str, Any]] = []
         risk_score = 0.0
 
+        # Canary check first — full-score hit if the system prompt was extracted
+        canary_result = self.canary.check_output(output)
         if canary_result["canary_leaked"]:
             detections.append({"detector": "canary-output", **canary_result})
             risk_score = 1.0
 
+        # PII / secret / system-leak scan
         guardrail_result = scan_output_guardrails(output)
         if not guardrail_result.is_safe:
             detections.append(
@@ -110,12 +115,14 @@ class LLMGuardPipeline:
             risk_score=round(risk_score, 4),
             detections=detections,
             recommendation=recommendation,
+            redacted_output=redacted if is_blocked else output,
         )
 
     def scan_rag_context(self, documents: list[str]) -> ScanResult:
-        """Scan retrieved RAG chunks before they are inserted into an LLM context."""
-        detections = []
+        """Scan retrieved RAG chunks before they are inserted into the LLM context."""
+        detections: list[dict[str, Any]] = []
         risk_score = 0.0
+
         for idx, document in enumerate(documents):
             result = scan_retrieved_document(document, source=f"chunk:{idx}")
             if result.is_poisoned:
