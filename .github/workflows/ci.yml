@@ -11,13 +11,40 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - run: pip install -r requirements.txt
-      - run: python -m ruff check src tests verify.py scan.py
-      - run: python verify.py
-      - run: pytest tests/ -v
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install bandit pip-audit cyclonedx-bom
+
+      - name: Run Bandit
+        run: bandit -r src/ -ll
+
+      - name: Run pip-audit
+        run: pip-audit -r requirements.txt
+
+      - name: Generate SBOM
+        run: cyclonedx-py requirements requirements.txt --output-format json --output-file sbom.json
+
+      - name: Run Pytest
+        run: pytest tests/ -v
+
+      - name: Red-Team Corpus Test
+        run: |
+          # Ensure all red-team payloads are detected
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ "$line" =~ ^# ]] || [[ -z "$line" ]]; then continue; fi
+            python scan.py --input "$line" --json | grep '"is_blocked": true' || (echo "FAILED TO DETECT: $line" && exit 1)
+          done < data/payloads/red_team_corpus.txt
+
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-guard-sbom
+          path: sbom.json

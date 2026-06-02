@@ -31,10 +31,12 @@ class InjectionClassifier:
             self._model_error = "disabled"
             return
         try:
-            from transformers import AutoTokenizer, AutoModelForSequenceClassification
+            from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
             self._tokenizer = AutoTokenizer.from_pretrained(self.model_path)
-            self._model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
+            self._model = AutoModelForSequenceClassification.from_pretrained(
+                self.model_path
+            )
             self._model.eval()
         except (ImportError, OSError) as exc:
             self._model_error = exc.__class__.__name__
@@ -53,7 +55,9 @@ class InjectionClassifier:
 
         import torch
 
-        inputs = self._tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+        inputs = self._tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=512
+        )
         with torch.no_grad():
             outputs = self._model(**inputs)
             probs = torch.softmax(outputs.logits, dim=-1)
@@ -70,9 +74,18 @@ class InjectionClassifier:
     def _heuristic_classify(self, text: str) -> dict:
         """Fallback heuristic when model unavailable."""
         injection_signals = [
-            "ignore previous", "ignore above", "disregard", "forget your instructions",
-            "you are now", "new instructions", "system prompt", "reveal your",
-            "act as", "pretend you", "jailbreak", "dan mode",
+            "ignore previous",
+            "ignore above",
+            "disregard",
+            "forget your instructions",
+            "you are now",
+            "new instructions",
+            "system prompt",
+            "reveal your",
+            "act as",
+            "pretend you",
+            "jailbreak",
+            "dan mode",
         ]
         text_lower = text.lower()
         matches = sum(1 for sig in injection_signals if sig in text_lower)

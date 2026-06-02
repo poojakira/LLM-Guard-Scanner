@@ -10,6 +10,7 @@ Scans LLM outputs for sensitive data leakage:
 Based on OWASP LLM02: "Failure to protect against disclosure of sensitive
 information in LLM outputs can result in legal consequences."
 """
+
 import re
 from dataclasses import dataclass, field
 
@@ -47,8 +48,12 @@ SYSTEM_PROMPT_PATTERNS = {
 }
 
 
-def scan_output(text: str, check_pii: bool = True, check_secrets: bool = True,
-                check_system_leak: bool = True) -> GuardrailResult:
+def scan_output(
+    text: str,
+    check_pii: bool = True,
+    check_secrets: bool = True,
+    check_system_leak: bool = True,
+) -> GuardrailResult:
     """
     Scan LLM output for sensitive data leakage.
 
@@ -75,8 +80,12 @@ def scan_output(text: str, check_pii: bool = True, check_secrets: bool = True,
         for secret_type, pattern in SECRET_PATTERNS.items():
             matches = re.findall(pattern, text)
             if matches:
-                violations.append(f"SECRET:{secret_type} ({len(matches)} occurrence(s))")
-                redacted = re.sub(pattern, f"[REDACTED_{secret_type.upper()}]", redacted)
+                violations.append(
+                    f"SECRET:{secret_type} ({len(matches)} occurrence(s))"
+                )
+                redacted = re.sub(
+                    pattern, f"[REDACTED_{secret_type.upper()}]", redacted
+                )
 
     if check_system_leak:
         for leak_type, pattern in SYSTEM_PROMPT_PATTERNS.items():
