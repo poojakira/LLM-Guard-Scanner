@@ -1,5 +1,5 @@
-"""
-LLM Guard Scanner — CLI Interface
+"""CLI entry point for LLM Guard Scanner."""
+from __future__ import annotations
 
 Usage:
     python scan.py --input "user prompt text"
@@ -10,6 +10,9 @@ Usage:
 import argparse
 import json
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
 
 sys.path.insert(0, ".")
 from src.detectors import (
@@ -20,6 +23,8 @@ from src.detectors import (
 from src.guardrails import scan_output
 from src.utils.compliance import log_compliance_event
 
+# Only text-like files make sense here — binary formats not supported
+SUPPORTED_TEXT_EXTENSIONS = {".txt", ".md", ".json", ".yaml", ".yml", ".log"}
 
 def main():
     parser = argparse.ArgumentParser(description="LLM-Guard-Scanner (Enhanced v2026)")
@@ -95,8 +100,14 @@ def main():
                     print(f"    [P] {p}")
 
     elif args.file:
-        with open(args.file) as f:
-            lines = [line.strip() for line in f if line.strip()]
+        path = Path(args.file)
+        if path.suffix.lower() not in SUPPORTED_TEXT_EXTENSIONS:
+            print(
+                f"[WARN] Unexpected extension '{path.suffix}'. Expected: "
+                f"{', '.join(sorted(SUPPORTED_TEXT_EXTENSIONS))}",
+                file=sys.stderr,
+            )
+        lines = [ln.strip() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
         blocked, total = 0, len(lines)
         for line in lines:
             inj = detect_prompt_injection(line, threshold=args.threshold)
@@ -124,8 +135,13 @@ def main():
                 print(f"  - {v}")
 
     elif args.rag_scan:
-        with open(args.rag_scan) as f:
-            content = f.read()
+        path = Path(args.rag_scan)
+        if path.suffix.lower() not in SUPPORTED_TEXT_EXTENSIONS:
+            print(
+                f"[WARN] Unexpected extension '{path.suffix}'.",
+                file=sys.stderr,
+            )
+        content = path.read_text(encoding="utf-8")
         result = scan_retrieved_document(content, source=args.rag_scan)
         if args.json:
             print(
@@ -140,11 +156,13 @@ def main():
             )
         else:
             status = "POISONED" if result.is_poisoned else "CLEAN"
-            print(f"[{status}] Risk: {result.risk_score:.0%}")
-            for f_item in result.findings:
-                print(f"  - {f_item}")
+            print(f"[{status}] risk={result.risk_score:.0%}")
+            for finding in result.findings:
+                print(f"  - {finding}")
+
     else:
         parser.print_help()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
 """
 Optional transformer-based prompt injection classifier.
 
-The default path is a lightweight heuristic fallback. Set enable_model=True
-and install requirements-ml.txt to load a Hugging Face sequence classifier.
+The default path is a lightweight heuristic fallback.
+Set enable_model=True and install requirements-ml.txt to load a
+Hugging Face sequence classifier.
 """
 
 
@@ -49,7 +50,6 @@ class InjectionClassifier:
             dict with keys: is_injection, confidence, method
         """
         self._load_model()
-
         if self._model is None:
             return self._heuristic_classify(text)
 
@@ -60,11 +60,9 @@ class InjectionClassifier:
         )
         with torch.no_grad():
             outputs = self._model(**inputs)
-            probs = torch.softmax(outputs.logits, dim=-1)
-
+        probs = torch.softmax(outputs.logits, dim=-1)
         # Assume label 1 = injection
         injection_prob = float(probs[0][1])
-
         return {
             "is_injection": injection_prob >= self.threshold,
             "confidence": round(injection_prob, 4),
@@ -90,7 +88,6 @@ class InjectionClassifier:
         text_lower = text.lower()
         matches = sum(1 for sig in injection_signals if sig in text_lower)
         score = min(matches * 0.3, 1.0)
-
         return {
             "is_injection": score >= self.threshold,
             "confidence": round(score, 4),
