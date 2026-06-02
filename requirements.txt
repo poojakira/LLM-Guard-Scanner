@@ -1,3 +1,7 @@
-# Base/test dependencies for the lightweight scanner.
+# Core scanner — stdlib only, no heavy deps
+# Run: pip install -r requirements.txt
+# For transformer-based detectors: pip install -e ".[ml]"
 pytest==8.2.0
+pytest-cov==5.0.0
 ruff==0.8.4
+pip-audit==2.7.3
