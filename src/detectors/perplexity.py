@@ -1,10 +1,9 @@
 """
 Optional perplexity-based injection detection.
 
-The default path uses a lightweight character-entropy estimate. Set
-enable_model=True and install requirements-ml.txt to compute GPT-2 perplexity.
+The default path uses a lightweight character-entropy estimate.
+Set enable_model=True and install requirements-ml.txt to compute GPT-2 perplexity.
 """
-
 import math
 
 
@@ -51,8 +50,12 @@ class PerplexityDetector:
         try:
             from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 
-            self._tokenizer = GPT2TokenizerFast.from_pretrained("gpt2", revision="main") # Security: Pin revision in production
-            self._model = GPT2LMHeadModel.from_pretrained("gpt2", revision="main") # Security: Pin revision in production
+            # TODO(security): Replace revision="main" with a specific commit SHA before
+            # deploying in any environment where model integrity matters, e.g.:
+            #   revision="abc123..."  # obtained via: huggingface-cli model-info gpt2
+            # "main" is a mutable branch ref and does not pin the model version.
+            self._tokenizer = GPT2TokenizerFast.from_pretrained("gpt2", revision="main")
+            self._model = GPT2LMHeadModel.from_pretrained("gpt2", revision="main")
             self._model.eval()
         except (ImportError, OSError) as exc:
             self._model_error = exc.__class__.__name__
@@ -61,7 +64,6 @@ class PerplexityDetector:
     def compute_perplexity(self, text: str) -> float:
         """Compute GPT-2 perplexity when enabled, otherwise estimate entropy."""
         self._load_model()
-
         if self._model is None:
             self._last_method = "char-entropy-fallback"
             return self._char_entropy_estimate(text)
@@ -70,11 +72,9 @@ class PerplexityDetector:
 
         encodings = self._tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
         input_ids = encodings["input_ids"]
-
         with torch.no_grad():
             outputs = self._model(input_ids, labels=input_ids)
             loss = outputs.loss
-
         self._last_method = "perplexity-gpt2"
         return float(math.exp(loss.item()))
 
@@ -89,7 +89,6 @@ class PerplexityDetector:
             std = self.baseline_std
         z_score = (ppl - baseline) / max(std, 1.0)
         is_anomalous = z_score > self.threshold_sigma
-
         return {
             "is_anomalous": is_anomalous,
             "perplexity": round(ppl, 2),
@@ -101,8 +100,10 @@ class PerplexityDetector:
         """Fallback: estimate perplexity from character entropy."""
         if not text:
             return 0.0
-        freq = {}
+        freq: dict[str, int] = {}
         for c in text:
             freq[c] = freq.get(c, 0) + 1
-        entropy = -sum((count / len(text)) * math.log2(count / len(text)) for count in freq.values())
+        entropy = -sum(
+            (count / len(text)) * math.log2(count / len(text)) for count in freq.values()
+        )
         return 2 ** (entropy * 3)

@@ -1,11 +1,11 @@
 """
 RAG Poisoning Detector (OWASP LLM03 - Training Data Poisoning, applied to retrieval)
 
-Detects indirect prompt injection in retrieved documents that could
-manipulate LLM behavior when used as context in RAG pipelines.
+Detects indirect prompt injection in retrieved documents that could manipulate
+LLM behavior when used as context in RAG pipelines.
 
-Attack vector: Attacker plants malicious instructions in documents that
-get retrieved and injected into the LLM context window.
+Attack vector: Attacker plants malicious instructions in documents that get
+retrieved and injected into the LLM context window.
 
 Reference: Greshake et al., "Not what you've signed up for: Compromising
 Real-World LLM-Integrated Applications with Indirect Prompt Injection" (2023)
@@ -26,27 +26,21 @@ class RAGScanResult:
 INDIRECT_INJECTION_PATTERNS = [
     # Hidden instructions targeting the LLM
     r"(?i)\[system\].*\[/system\]",
-    r"(?i)<!--\s*(ignore|forget|override|new instructions)",
-    r"(?i)<hidden>.*</hidden>",
-    # Instruction-like text that shouldn't appear in normal documents
-    r"(?i)when\s+(asked|queried|prompted)\s+about\s+this\s+(document|text|content)\s*,?\s*(say|respond|answer|tell)",
-    r"(?i)if\s+(an?\s+)?(AI|LLM|assistant|model)\s+(reads?|processes|sees)\s+this",
-    r"(?i)(AI|assistant|model)\s*[:;]\s*(ignore|forget|override|disregard)",
-    # Data exfiltration attempts via RAG
-    r"(?i)include\s+(the\s+)?(user'?s?|their)\s+(email|name|data|query|question)\s+in\s+(your|the)\s+(response|output|answer)",
-    r"(?i)append\s+.*\s+to\s+(your|the)\s+(response|output|answer)",
-    # Invisible text (zero-width characters used to hide instructions)
-    r"[\u200b\u200c\u200d\ufeff]{3,}",
+    r"(?i)<instructions?>.*</instructions?>",
+    r"(?i)<!--.*ignore.*-->",
+    r"(?i)if\s+(an?\s+)?(ai|llm|gpt|assistant|bot)\s+(reads?|sees?|processes?)",
+    r"(?i)(disregard|ignore|forget)\s+(the\s+)?(above|previous|prior|all)\s+(context|instructions?|text)",
+    r"(?i)respond\s+(only\s+)?with\s*['\"]",
+    r"(?i)your\s+(new\s+)?instructions?\s+(are|is)\s*[:;]",
 ]
 
-# Structural anomalies that suggest document manipulation
+# Structural anomalies: formatting patterns unusual in legitimate documents
 STRUCTURAL_ANOMALIES = [
-    # Sudden format changes suggesting injected content
-    r"(?i)(---+|===+)\s*(begin|start)\s*(injection|payload|instructions?)",
-    # Base64 encoded payloads hidden in documents
-    r"(?i)data:\s*[A-Za-z0-9+/=]{50,}",
-    # Markdown/HTML comments with instructions
-    r"<!--[\s\S]*?(ignore|override|inject|system)[\s\S]*?-->",
+    r"(?i)\[/?INST\]",            # Llama/Mistral prompt delimiters
+    r"(?i)<\|im_(start|end)\|>",  # ChatML delimiters
+    r"(?i)<<SYS>>.*<</SYS>>",    # Llama2 system block
+    r"(?i)###\s*(system|instruction|override)",
+    r"(?i)---+\s*(new|system|actual)\s*(instructions?|prompt|task)",
 ]
 
 
@@ -68,7 +62,9 @@ def scan_retrieved_document(document: str, source: str = "unknown") -> RAGScanRe
     for pattern in INDIRECT_INJECTION_PATTERNS:
         matches = re.findall(pattern, document)
         if matches:
-            findings.append(f"Indirect injection pattern: {pattern[:50]}... ({len(matches)} match)")
+            findings.append(
+                f"Indirect injection pattern: {pattern[:50]}... ({len(matches)} match)"
+            )
             max_score = max(max_score, 0.9)
 
     # Check structural anomalies
@@ -78,18 +74,25 @@ def scan_retrieved_document(document: str, source: str = "unknown") -> RAGScanRe
             max_score = max(max_score, 0.7)
 
     # Heuristic: high ratio of imperative sentences (commands) is suspicious
-    sentences = [s.strip() for s in re.split(r'[.!?]', document) if s.strip()]
+    sentences = [s.strip() for s in re.split(r"[.!?]", document) if s.strip()]
     if sentences:
-        imperative_keywords = ["ignore", "forget", "override", "respond", "say",
-                               "tell", "output", "include", "append", "return"]
+        imperative_keywords = [
+            "ignore", "forget", "override", "respond", "say", "tell",
+            "output", "include", "append", "return",
+        ]
         imperative_count = sum(
-            1 for s in sentences
-            if any(s.lower().startswith(kw) or f" {kw} " in s.lower()
-                   for kw in imperative_keywords)
+            1
+            for s in sentences
+            if any(
+                s.lower().startswith(kw) or f" {kw} " in s.lower()
+                for kw in imperative_keywords
+            )
         )
         imperative_ratio = imperative_count / len(sentences)
         if imperative_ratio > 0.3:
-            findings.append(f"High imperative ratio: {imperative_ratio:.0%} of sentences are commands")
+            findings.append(
+                f"High imperative ratio: {imperative_ratio:.0%} of sentences are commands"
+            )
             max_score = max(max_score, 0.6)
 
     return RAGScanResult(
