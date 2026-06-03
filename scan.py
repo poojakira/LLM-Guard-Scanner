@@ -73,6 +73,9 @@ def main():
                 json.dumps(
                     {
                         "is_injection": is_blocked,
+                        # alias kept so downstream consumers and the CI red-team
+                        # corpus step can key on either field name
+                        "is_blocked": is_blocked,
                         "confidence": confidence,
                         "category": injection_result.category,
                         "patterns": injection_result.matched_patterns,
