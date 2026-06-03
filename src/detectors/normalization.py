@@ -13,11 +13,44 @@ HEX_TOKEN_RE = re.compile(r"\b(?:0x)?[0-9a-fA-F]{32,}\b")
 MAX_DECODED_CHARS = 4096
 MAX_VARIANTS = 8
 
+# Homoglyph / confusable folding. NFKC does NOT fold Cyrillic/Greek letters that
+# are visually identical to Latin (e.g. Cyrillic 'о' U+043E vs Latin 'o'), so an
+# attacker can write "Ignоre previous instructions" and bypass ASCII regex.
+# We fold the most-abused confusables to their Latin lowercase skeleton before
+# matching. Folding to lowercase is safe because detection regexes use IGNORECASE.
+# Reference: Unicode TR39 confusables, IDN homograph attacks.
+_CONFUSABLES = {
+    # Cyrillic lowercase
+    "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x",
+    "і": "i", "ј": "j", "ѕ": "s", "ԁ": "d", "ո": "n", "г": "r", "ь": "b",
+    "к": "k", "м": "m", "н": "h", "т": "t", "в": "b",
+    # Cyrillic uppercase -> latin lowercase (IGNORECASE regexes still match)
+    "А": "a", "Е": "e", "О": "o", "Р": "p", "С": "c", "У": "y", "Х": "x",
+    "І": "i", "Ј": "j", "Ѕ": "s", "К": "k", "М": "m", "Н": "h", "Т": "t",
+    "В": "b", "Г": "r",
+    # Greek
+    "ο": "o", "α": "a", "ε": "e", "ρ": "p", "ν": "v", "τ": "t", "ι": "i",
+    "κ": "k", "υ": "u", "χ": "x", "Ο": "o", "Α": "a", "Ε": "e", "Ρ": "p",
+    "Τ": "t", "Κ": "k", "Χ": "x", "Β": "b", "Η": "h", "Ι": "i", "Ν": "n",
+    # Fullwidth latin handled by NFKC; mathematical alphanumerics are too.
+}
+_CONFUSABLE_TABLE = str.maketrans(_CONFUSABLES)
+
+
+def fold_confusables(text: str) -> str:
+    """Fold visually-confusable Cyrillic/Greek characters to a Latin skeleton."""
+    return text.translate(_CONFUSABLE_TABLE)
+
 
 def canonicalize_text(text: str) -> str:
-    """Return a normalized text form for pattern matching."""
+    """Return a normalized text form for pattern matching.
+
+    Order: NFKC (fold compatibility chars, fullwidth, ligatures) -> strip
+    zero-width chars -> fold Cyrillic/Greek homoglyphs to Latin skeleton.
+    """
     normalized = unicodedata.normalize("NFKC", text)
     normalized = ZERO_WIDTH_RE.sub("", normalized)
+    normalized = fold_confusables(normalized)
     return normalized
 
 

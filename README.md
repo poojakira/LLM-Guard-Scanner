@@ -21,6 +21,33 @@ python demo.py   # no API keys, no network required
 
 Output: 4 attack patterns detected across L1/L2/L4/L5 layers. Clean messages pass.
 
+## Detection Layers (and honest limits)
+
+Input scanning runs as a layered ensemble, strongest-deterministic-first:
+
+1. **Normalization** (`src/detectors/normalization.py`) — NFKC, zero-width
+   stripping, **Cyrillic/Greek homoglyph folding**, and bounded base64/hex
+   decoding. This runs *before* matching, so `Ignоre` (Cyrillic о) and a
+   base64-wrapped payload are folded to their real form first.
+2. **Regex pattern detector** (`src/detectors/injection.py`) — instruction
+   override/nullification, jailbreak monikers, delimiter injection, encoding
+   evasion, context switch, and sensitive-disclosure/exfiltration categories.
+3. **Optional ML classifier** (`src/detectors/classifier.py`) — DeBERTa prompt
+   injection model when `enable_ml=True` and `requirements-ml.txt` is installed;
+   otherwise falls back to the normalized regex detector (not a weak keyword list).
+4. **Perplexity + canary** layers for anomalous text and system-prompt extraction.
+
+**Honest limits — read before trusting this in production:**
+- Regex + normalization is a strong *first* layer, **not a guarantee**. A
+  determined adversary can craft payloads outside the pattern set. Enable the
+  ML classifier (`enable_ml=True`) for defense-in-depth.
+- Homoglyph folding covers the most-abused Cyrillic/Greek confusables, not the
+  full Unicode TR39 confusables table.
+- Verified against `data/payloads/red_team_corpus.txt` (17/17 detected,
+  including homoglyph + base64 evasion) with zero false positives on a benign
+  tech/gaming/security/non-English sample. That corpus is small by design — it
+  is a regression guard, not a benchmark.
+
 ## Detection Capabilities
 
 | Threat | Layer | OWASP | MITRE ATLAS |

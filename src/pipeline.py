@@ -15,6 +15,7 @@ from typing import Any
 
 from src.detectors.canary import CanaryDetector
 from src.detectors.classifier import InjectionClassifier
+from src.detectors.injection import detect_prompt_injection
 from src.detectors.perplexity import PerplexityDetector
 from src.detectors.rag_poisoning import scan_retrieved_document
 from src.guardrails.output_scanner import scan_output as scan_output_guardrails
@@ -53,7 +54,22 @@ class LLMGuardPipeline:
         detections: list[dict[str, Any]] = []
         risk_score = 0.0
 
-        # 1. Optional transformer classifier; falls back to keyword heuristic
+        # 1. Regex + normalization layer (homoglyph fold, base64/hex decode,
+        #    NFKC). This is the deterministic first line and runs offline.
+        rx_result = detect_prompt_injection(text)
+        if rx_result.is_injection:
+            detections.append(
+                {
+                    "detector": "regex-normalized",
+                    "is_injection": True,
+                    "confidence": rx_result.confidence,
+                    "category": rx_result.category,
+                    "patterns": rx_result.matched_patterns,
+                }
+            )
+            risk_score = max(risk_score, rx_result.confidence)
+
+        # 2. Optional transformer classifier; falls back to regex-backed heuristic
         cls_result = self.classifier.classify(text)
         if cls_result["is_injection"]:
             detections.append({"detector": "classifier", **cls_result})
