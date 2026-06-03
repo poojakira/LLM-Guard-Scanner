@@ -54,6 +54,42 @@ SYSTEM_PROMPT_PATTERNS = {
 _ENTROPY_THRESHOLD = 4.5
 _MIN_SECRET_LENGTH = 20
 
+
+def _shannon_entropy(token: str) -> float:
+    """Compute Shannon entropy (bits per character) of a string."""
+    if not token:
+        return 0.0
+    from collections import Counter
+    from math import log2
+
+    counts = Counter(token)
+    length = len(token)
+    return -sum((c / length) * log2(c / length) for c in counts.values())
+
+
+def _has_high_entropy_token(text: str) -> str | None:
+    """
+    Return the first whitespace-delimited token that looks like an unlabelled
+    secret: long enough and with Shannon entropy above the threshold.
+
+    This catches raw credentials (API tokens, passwords, key material) that do
+    not match any named SECRET_PATTERNS prefix. Returns the token, or None.
+    """
+    for raw_token in text.split():
+        # Strip common surrounding punctuation so quotes/commas don't skew entropy
+        token = raw_token.strip("\"'`,;:()[]{}<>")
+        if len(token) < _MIN_SECRET_LENGTH:
+            continue
+        # Require a mix of character classes to avoid flagging long English words
+        has_digit = any(ch.isdigit() for ch in token)
+        has_alpha = any(ch.isalpha() for ch in token)
+        if not (has_digit and has_alpha):
+            continue
+        if _shannon_entropy(token) >= _ENTROPY_THRESHOLD:
+            return token
+    return None
+
+
 def scan_output(
     text: str,
     check_pii: bool = True,

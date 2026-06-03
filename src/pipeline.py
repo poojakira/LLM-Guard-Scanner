@@ -87,6 +87,9 @@ class LLMGuardPipeline:
         """Scan LLM output for data leakage before returning it to the caller."""
         detections: list[dict[str, Any]] = []
         risk_score = 0.0
+        # Default to the original output; replaced with the redacted form if a
+        # guardrail violation produces sanitized text.
+        redacted = output
 
         # Canary check first — full-score hit if the system prompt was extracted
         canary_result = self.canary.check_output(output)
@@ -105,6 +108,7 @@ class LLMGuardPipeline:
                 }
             )
             risk_score = max(risk_score, self._output_risk(guardrail_result.violations))
+            redacted = guardrail_result.redacted_text
 
         is_blocked = risk_score >= 0.85
         recommendation = (
