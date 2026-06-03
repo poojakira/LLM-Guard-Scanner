@@ -32,6 +32,11 @@ class DetectionResult:
     category: str
 
 
+# Maximum number of characters scanned per input. Truncating first bounds the
+# work done by the regex engine and prevents ReDoS on adversarially long inputs.
+MAX_SCAN_LENGTH = 10_000
+
+
 # Real-world prompt injection patterns from published research and CTFs
 
 INSTRUCTION_OVERRIDE_PATTERNS = [
@@ -115,7 +120,7 @@ def detect_prompt_injection(text: str, threshold: float = 0.5) -> DetectionResul
     max_confidence = 0.0
     detected_category = "none"
 
-    for variant_index, candidate in enumerate(detection_variants(text)):
+    for variant_index, candidate in enumerate(detection_variants(scan_text)):
         source = "decoded" if variant_index else "canonical"
         for category, patterns in CATEGORY_PATTERNS.items():
             for pattern in patterns:

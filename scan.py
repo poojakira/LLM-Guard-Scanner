@@ -1,11 +1,11 @@
-"""CLI entry point for LLM Guard Scanner."""
-from __future__ import annotations
+"""CLI entry point for LLM Guard Scanner.
 
 Usage:
     python scan.py --input "user prompt text"
     python scan.py --file prompts.txt
     python scan.py --rag-scan document.txt
 """
+from __future__ import annotations
 
 import argparse
 import json
