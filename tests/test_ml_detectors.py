@@ -30,7 +30,9 @@ class TestInjectionClassifier:
     def test_classifier_model_is_opt_in(self):
         clf = InjectionClassifier()
         result = clf.classify("Hello world")
-        assert result["method"] == "heuristic-fallback"
+        # Offline default: transformer model is NOT loaded; the fallback path
+        # (regex-normalized detector) is used instead of a weak keyword list.
+        assert result["method"] == "regex-normalized-fallback"
         assert clf._model is None
 
 
