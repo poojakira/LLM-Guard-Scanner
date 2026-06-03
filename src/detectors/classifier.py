@@ -70,26 +70,19 @@ class InjectionClassifier:
         }
 
     def _heuristic_classify(self, text: str) -> dict:
-        """Fallback heuristic when model unavailable."""
-        injection_signals = [
-            "ignore previous",
-            "ignore above",
-            "disregard",
-            "forget your instructions",
-            "you are now",
-            "new instructions",
-            "system prompt",
-            "reveal your",
-            "act as",
-            "pretend you",
-            "jailbreak",
-            "dan mode",
-        ]
-        text_lower = text.lower()
-        matches = sum(1 for sig in injection_signals if sig in text_lower)
-        score = min(matches * 0.3, 1.0)
+        """Fallback when the transformer model is unavailable (e.g. offline CI).
+
+        Rather than a weak substring list, this reuses the normalized regex
+        detector (homoglyph folding + base64/hex decode + pattern set), so the
+        offline path keeps real detection strength instead of degrading.
+        """
+        # Lazy import avoids any import cycle within src.detectors
+        from src.detectors.injection import detect_prompt_injection
+
+        rx = detect_prompt_injection(text)
         return {
-            "is_injection": score >= self.threshold,
-            "confidence": round(score, 4),
-            "method": "heuristic-fallback",
+            "is_injection": rx.is_injection,
+            "confidence": round(rx.confidence, 4),
+            "method": "regex-normalized-fallback",
+            "category": rx.category,
         }
