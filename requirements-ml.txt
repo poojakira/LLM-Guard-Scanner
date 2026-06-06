@@ -1,4 +1,4 @@
 # Optional heavy dependencies for transformer classifier and GPT-2 perplexity.
 # Install with: pip install -r requirements-ml.txt
 torch>=2.2,<3
-transformers>=4.40,<5
+transformers>=4.40.0,<6.0.0
