@@ -29,7 +29,7 @@ dependencies = []
 # Install these to enable the transformer-based classifier and GPT-2 perplexity
 ml = [
     "torch>=2.3.0,<3.0.0",
-    "transformers>=4.40.0,<5.0.0",
+    "transformers>=4.40.0,<6.0.0",
 ]
 # FastAPI middleware for production serving
 api = [
@@ -39,7 +39,7 @@ api = [
 ]
 dev = [
     "pytest>=8.2.0,<9.0.0",
-    "pytest-cov>=5.0.0,<6.0.0",
+    "pytest-cov>=5.0.0,<8.0.0",
     "ruff>=0.8.4,<0.10.0",
     "pip-audit>=2.7.3,<3.0.0",
 ]
