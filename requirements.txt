@@ -1,12 +1,5 @@
-# Pinned — all versions verified clean by pip-audit 2026-06-07
-# Run: pip install -r requirements.txt
-# For transformer-based detectors: pip install -e ".[ml]"
-pytest==8.3.4
-pytest-cov==6.0.0
-ruff==0.8.4
-fastapi==0.115.6
-uvicorn==0.32.1
-pydantic==2.10.4
-pip-audit==2.7.3
-bandit==1.8.3
-cyclonedx-bom==5.1.1
+# Runtime requirements for llm-guard-scanner core (no heavy deps).
+# For API serving: pip install -e ".[api]"
+# For ML detectors: pip install -e ".[ml]"
+# For development: pip install -e ".[dev]"
+# See pyproject.toml for the full dependency graph.
