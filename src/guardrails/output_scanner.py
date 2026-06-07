@@ -25,9 +25,9 @@ class GuardrailResult:
 # ip_address intentionally removed: version strings like "3.11.2" or "1.0.0.1"
 # match the naive pattern and would fire constantly in software-domain RAG answers.
 PII_PATTERNS = {
-    "email":       r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}",
-    "us_phone":    r"(?:\+1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]\d{4}",
-    "ssn":         r"\b\d{3}-\d{2}-\d{4}\b",
+    "email": r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}",
+    "us_phone": r"(?:\+1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]\d{4}",
+    "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
     # Major card brands: Visa (4...), Mastercard (51-55...), Amex (34/37...)
     "credit_card": r"\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\b",
 }
@@ -35,9 +35,9 @@ PII_PATTERNS = {
 # Secret patterns sourced from trufflehog and gitleaks rule sets
 SECRET_PATTERNS = {
     "aws_access_key": r"AKIA[0-9A-Z]{16}",
-    "github_token":   r"gh[ps]_[A-Za-z0-9_]{36,}",
-    "jwt_token":      r"eyJ[A-Za-z0-9_\-]+\.eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+",
-    "private_key":    r"-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----",
+    "github_token": r"gh[ps]_[A-Za-z0-9_]{36,}",
+    "jwt_token": r"eyJ[A-Za-z0-9_\-]+\.eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+",
+    "private_key": r"-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----",
     # generic: requires explicit key= label to keep false positive rate low
     "generic_api_key": r"(?i)(?:api[_\-]?key|apikey|secret[_\-]?key)\s*[:=]\s*['\"]?[A-Za-z0-9_\-]{20,}",
 }
@@ -45,8 +45,8 @@ SECRET_PATTERNS = {
 # Phrases that suggest the model is disclosing its system configuration
 SYSTEM_PROMPT_PATTERNS = {
     "system_instruction": r"(?i)(?:my\s+)?system\s+(?:prompt|instructions?)\s+(?:is|are|says?)\s*[:;]",
-    "role_disclosure":    r"(?i)i\s+am\s+(?:programmed|instructed|designed|configured)\s+to",
-    "internal_rules":     r"(?i)(?:my|the)\s+(?:rules?|guidelines?|constraints?)\s+(?:are|include|state)",
+    "role_disclosure": r"(?i)i\s+am\s+(?:programmed|instructed|designed|configured)\s+to",
+    "internal_rules": r"(?i)(?:my|the)\s+(?:rules?|guidelines?|constraints?)\s+(?:are|include|state)",
 }
 
 # Entropy threshold for spotting high-randomness strings that look like secrets
@@ -132,7 +132,9 @@ def scan_output(
         # Entropy-based fallback for unlabelled high-entropy tokens
         suspicious_token = _has_high_entropy_token(text)
         if suspicious_token:
-            violations.append("SECRET:high_entropy_token (possible unlabelled credential)")
+            violations.append(
+                "SECRET:high_entropy_token (possible unlabelled credential)"
+            )
             redacted = redacted.replace(suspicious_token, "[REDACTED_HIGH_ENTROPY]")
 
     if check_system_leak:
