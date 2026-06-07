@@ -27,7 +27,7 @@ from .normalization import detection_variants
 @dataclass
 class DetectionResult:
     is_injection: bool
-    confidence: float        # 0.0 to 1.0
+    confidence: float  # 0.0 to 1.0
     matched_patterns: list
     category: str
 
@@ -76,19 +76,19 @@ ROLE_MANIPULATION_PATTERNS = [
 # NOTE: patterns here are precise — no open groups, no wildcards
 # These target actual delimiters used in model prompt formats
 DELIMITER_INJECTION_PATTERNS = [
-    r"```\s*(?:system|end_of_system_prompt|stop)",   # markdown code block injection
-    r"###\s*(?:system|instruction|end)",              # heading-style override
-    r"\[/?INST\]",                                    # Llama/Mistral prompt token
-    r"<\|im_(?:start|end)\|>",                        # ChatML token
-    r"<>\s*.+?\s*<>",                                # Llama2 system block
-    r"(?m)^(?:Human|Assistant)\s*:\s*$",              # roleplay boundary injection
-    r"(?m)^SYSTEM\s*:\s*",                            # fake system-role prefix injection
+    r"```\s*(?:system|end_of_system_prompt|stop)",  # markdown code block injection
+    r"###\s*(?:system|instruction|end)",  # heading-style override
+    r"\[/?INST\]",  # Llama/Mistral prompt token
+    r"<\|im_(?:start|end)\|>",  # ChatML token
+    r"<>\s*.+?\s*<>",  # Llama2 system block
+    r"(?m)^(?:Human|Assistant)\s*:\s*$",  # roleplay boundary injection
+    r"(?m)^SYSTEM\s*:\s*",  # fake system-role prefix injection
 ]
 
 ENCODING_EVASION_PATTERNS = [
     r"base64\s*[:;]\s*[A-Za-z0-9+/=]{20,}",
     r"decode\s+(?:this|the\s+following)\s*(?:base64|rot13|hex)",
-    r"\\u[0-9a-fA-F]{4}.*\\u[0-9a-fA-F]{4}",        # dense unicode escape sequences
+    r"\\u[0-9a-fA-F]{4}.*\\u[0-9a-fA-F]{4}",  # dense unicode escape sequences
     r"translate\s+from\s+(?:base64|rot13|hex|binary)",
     # instruction embedded inside a translation/summarization request
     r"translate\s+the\s+following.{0,40}(?:ignore|reveal|disregard|output)",
@@ -115,20 +115,20 @@ SENSITIVE_DISCLOSURE_PATTERNS = [
 
 CATEGORY_PATTERNS = {
     "instruction_override": INSTRUCTION_OVERRIDE_PATTERNS,
-    "role_manipulation":    ROLE_MANIPULATION_PATTERNS,
-    "delimiter_injection":  DELIMITER_INJECTION_PATTERNS,
-    "encoding_evasion":     ENCODING_EVASION_PATTERNS,
-    "context_switch":       CONTEXT_SWITCH_PATTERNS,
+    "role_manipulation": ROLE_MANIPULATION_PATTERNS,
+    "delimiter_injection": DELIMITER_INJECTION_PATTERNS,
+    "encoding_evasion": ENCODING_EVASION_PATTERNS,
+    "context_switch": CONTEXT_SWITCH_PATTERNS,
     "sensitive_disclosure": SENSITIVE_DISCLOSURE_PATTERNS,
 }
 
 # Confidence weights per category (tuned against false-positive rates in practice)
 CATEGORY_WEIGHTS = {
     "instruction_override": 0.90,
-    "role_manipulation":    0.95,
-    "delimiter_injection":  0.85,
-    "encoding_evasion":     0.70,
-    "context_switch":       0.80,
+    "role_manipulation": 0.95,
+    "delimiter_injection": 0.85,
+    "encoding_evasion": 0.70,
+    "context_switch": 0.80,
     "sensitive_disclosure": 0.85,
 }
 
