@@ -5,6 +5,7 @@ Usage:
     python scan.py --file prompts.txt
     python scan.py --rag-scan document.txt
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,6 +26,7 @@ from src.utils.compliance import log_compliance_event
 
 # Only text-like files make sense here — binary formats not supported
 SUPPORTED_TEXT_EXTENSIONS = {".txt", ".md", ".json", ".yaml", ".yml", ".log"}
+
 
 def main():
     parser = argparse.ArgumentParser(description="LLM-Guard-Scanner (Enhanced v2026)")
@@ -110,7 +112,11 @@ def main():
                 f"{', '.join(sorted(SUPPORTED_TEXT_EXTENSIONS))}",
                 file=sys.stderr,
             )
-        lines = [ln.strip() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        lines = [
+            ln.strip()
+            for ln in path.read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
         blocked, total = 0, len(lines)
         for line in lines:
             inj = detect_prompt_injection(line, threshold=args.threshold)
@@ -120,7 +126,7 @@ def main():
                 print(
                     f"  [BLOCKED] {line[:80]}... (Pat: {inj.category}, Sem: {sem.adversarial_intent_score})"
                 )
-        print(f"\nResults: {blocked}/{total} blocked ({100*blocked/total:.1f}%)")
+        print(f"\nResults: {blocked}/{total} blocked ({100 * blocked / total:.1f}%)")
 
     elif args.output_scan:
         result = scan_output(args.output_scan)
