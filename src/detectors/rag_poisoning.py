@@ -23,7 +23,7 @@ from .normalization import detection_variants
 @dataclass
 class RAGScanResult:
     is_poisoned: bool
-    risk_score: float       # 0.0 to 1.0
+    risk_score: float  # 0.0 to 1.0
     findings: list = field(default_factory=list)
 
 
@@ -44,9 +44,9 @@ INDIRECT_INJECTION_PATTERNS = [
 # Structural anomalies: these formatting tokens have no business appearing
 # in a normal retrieved document (financial report, wiki page, FAQ, etc.)
 STRUCTURAL_ANOMALIES = [
-    r"(?i)\[/?INST\]",                  # Llama/Mistral prompt delimiters
-    r"(?i)<\|im_(?:start|end)\|>",      # ChatML delimiters
-    r"(?i)<>\s*.+?\s*<>",              # Llama2 system block
+    r"(?i)\[/?INST\]",  # Llama/Mistral prompt delimiters
+    r"(?i)<\|im_(?:start|end)\|>",  # ChatML delimiters
+    r"(?i)<>\s*.+?\s*<>",  # Llama2 system block
     r"(?i)###\s*(?:system|instruction|override)",
     r"(?i)---+\s*(?:new|system|actual)\s*(?:instructions?|prompt|task)",
 ]
