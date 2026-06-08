@@ -6,6 +6,7 @@ Implements the AugmentCode 2026 6-layer agentic attack model.
 Answers: EchoLeak (HackRead 2026), OWASP LLM01:2025, MITRE ATLAS AML.T0051
 OWASP Agentic Research Council formed June 4 2026 - no standards exist yet.
 """
+
 from __future__ import annotations
 import re
 from dataclasses import dataclass, field
@@ -38,11 +39,27 @@ class AgentScanResult:
 _L1_PATTERNS = [
     (r"ignore\s+(all\s+)?previous\s+instructions?", "AGT-L1-001", "HIGH"),
     (r"disregard\s+(all\s+)?(prior|previous|your)\s+", "AGT-L1-002", "HIGH"),
-    (r"you\s+are\s+now\s+(in\s+)?(unrestricted|dan|jailbreak|developer)\s+mode", "AGT-L1-003", "HIGH"),
-    (r"(reveal|output|print|show)\s+(the\s+)?(system\s+prompt|api\s+key|secret)", "AGT-L1-004", "HIGH"),
-    (r"act\s+as\s+(if\s+you\s+(have\s+no|are\s+without)|a\s+different)", "AGT-L1-005", "MEDIUM"),
+    (
+        r"you\s+are\s+now\s+(in\s+)?(unrestricted|dan|jailbreak|developer)\s+mode",
+        "AGT-L1-003",
+        "HIGH",
+    ),
+    (
+        r"(reveal|output|print|show)\s+(the\s+)?(system\s+prompt|api\s+key|secret)",
+        "AGT-L1-004",
+        "HIGH",
+    ),
+    (
+        r"act\s+as\s+(if\s+you\s+(have\s+no|are\s+without)|a\s+different)",
+        "AGT-L1-005",
+        "MEDIUM",
+    ),
     (r"dan\s+mode", "AGT-L1-006", "HIGH"),
-    (r"bypass\s+(all\s+)?(security|safety|content)\s+(checks?|filters?|policies?)", "AGT-L1-007", "HIGH"),
+    (
+        r"bypass\s+(all\s+)?(security|safety|content)\s+(checks?|filters?|policies?)",
+        "AGT-L1-007",
+        "HIGH",
+    ),
     (r"<system>.*?</system>", "AGT-L1-008", "CRITICAL"),
     (r"\[system\].*?\[/system\]", "AGT-L1-009", "CRITICAL"),
 ]
@@ -51,7 +68,11 @@ _L2_RAG_PATTERNS = [
     (r"ignore\s+(all\s+)?previous\s+instructions?", "AGT-L2-001", "CRITICAL"),
     (r"<system>", "AGT-L2-002", "CRITICAL"),
     (r"you\s+are\s+now\s+in\s+unrestricted", "AGT-L2-003", "CRITICAL"),
-    (r"output\s+(all\s+)?(user\s+data|conversation\s+history|system\s+prompt)", "AGT-L2-004", "CRITICAL"),
+    (
+        r"output\s+(all\s+)?(user\s+data|conversation\s+history|system\s+prompt)",
+        "AGT-L2-004",
+        "CRITICAL",
+    ),
     (r"exfiltrate|exfiltration", "AGT-L2-005", "HIGH"),
 ]
 
@@ -76,12 +97,14 @@ def _scan_patterns(text: str, patterns: list, layer: AgentLayer) -> list[AgentFi
     findings = []
     for pattern, rule_id, severity in patterns:
         if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
-            findings.append(AgentFinding(
-                layer=layer,
-                rule_id=rule_id,
-                severity=severity,
-                evidence=text[:120],
-            ))
+            findings.append(
+                AgentFinding(
+                    layer=layer,
+                    rule_id=rule_id,
+                    severity=severity,
+                    evidence=text[:120],
+                )
+            )
     return findings
 
 
@@ -120,20 +143,28 @@ def scan_agent_message(
 
     # L5: Inter-agent impersonation
     if caller_agent_id is not None:
-        findings += _scan_patterns(content, _L5_IMPERSONATION_PATTERNS, AgentLayer.INTER_AGENT)
+        findings += _scan_patterns(
+            content, _L5_IMPERSONATION_PATTERNS, AgentLayer.INTER_AGENT
+        )
         # Also scan content for impersonation claims
-        if re.search(r"(orchestrator|master|admin|system)\s+agent", content, re.IGNORECASE):
-            findings.append(AgentFinding(
-                layer=AgentLayer.INTER_AGENT,
-                rule_id="AGT-L5-004",
-                severity="HIGH",
-                evidence=content[:120],
-            ))
+        if re.search(
+            r"(orchestrator|master|admin|system)\s+agent", content, re.IGNORECASE
+        ):
+            findings.append(
+                AgentFinding(
+                    layer=AgentLayer.INTER_AGENT,
+                    rule_id="AGT-L5-004",
+                    severity="HIGH",
+                    evidence=content[:120],
+                )
+            )
 
     # Compute highest severity
     if not findings:
         highest = "CLEAN"
     else:
-        highest = max(findings, key=lambda f: _SEVERITY_ORDER.get(f.severity, 0)).severity
+        highest = max(
+            findings, key=lambda f: _SEVERITY_ORDER.get(f.severity, 0)
+        ).severity
 
     return AgentScanResult(highest_severity=highest, findings=findings)
