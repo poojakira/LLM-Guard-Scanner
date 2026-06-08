@@ -122,19 +122,13 @@ def scan_output(
         for secret_type, pattern in SECRET_PATTERNS.items():
             matches = re.findall(pattern, text)
             if matches:
-                violations.append(
-                    f"SECRET:{secret_type} ({len(matches)} occurrence(s))"
-                )
-                redacted = re.sub(
-                    pattern, f"[REDACTED_{secret_type.upper()}]", redacted
-                )
+                violations.append(f"SECRET:{secret_type} ({len(matches)} occurrence(s))")
+                redacted = re.sub(pattern, f"[REDACTED_{secret_type.upper()}]", redacted)
 
         # Entropy-based fallback for unlabelled high-entropy tokens
         suspicious_token = _has_high_entropy_token(text)
         if suspicious_token:
-            violations.append(
-                "SECRET:high_entropy_token (possible unlabelled credential)"
-            )
+            violations.append("SECRET:high_entropy_token (possible unlabelled credential)")
             redacted = redacted.replace(suspicious_token, "[REDACTED_HIGH_ENTROPY]")
 
     if check_system_leak:
