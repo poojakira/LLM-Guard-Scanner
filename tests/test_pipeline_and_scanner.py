@@ -7,9 +7,7 @@ fall back to heuristic paths that ship with the package.
 
 import os
 import sys
-import tempfile
 
-import pytest
 
 sys.path.insert(0, ".")
 
