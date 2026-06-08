@@ -88,9 +88,7 @@ class LLMGuardPipeline:
             risk_score = max(risk_score, 0.9)
 
         is_blocked = risk_score >= 0.85
-        recommendation = (
-            "block" if is_blocked else "warn" if risk_score > 0.5 else "allow"
-        )
+        recommendation = "block" if is_blocked else "warn" if risk_score > 0.5 else "allow"
 
         return ScanResult(
             is_blocked=is_blocked,
@@ -127,9 +125,7 @@ class LLMGuardPipeline:
             redacted = guardrail_result.redacted_text
 
         is_blocked = risk_score >= 0.85
-        recommendation = (
-            "block" if is_blocked else "warn" if risk_score > 0.0 else "allow"
-        )
+        recommendation = "block" if is_blocked else "warn" if risk_score > 0.0 else "allow"
         return ScanResult(
             is_blocked=is_blocked,
             risk_score=round(risk_score, 4),
@@ -157,9 +153,7 @@ class LLMGuardPipeline:
                 risk_score = max(risk_score, result.risk_score)
 
         is_blocked = risk_score >= 0.85
-        recommendation = (
-            "block" if is_blocked else "warn" if risk_score > 0.0 else "allow"
-        )
+        recommendation = "block" if is_blocked else "warn" if risk_score > 0.0 else "allow"
         return ScanResult(
             is_blocked=is_blocked,
             risk_score=round(risk_score, 4),
@@ -169,9 +163,7 @@ class LLMGuardPipeline:
 
     @staticmethod
     def _output_risk(violations: list[str]) -> float:
-        if any(
-            v.startswith("SECRET:") or v.startswith("SYSTEM_LEAK:") for v in violations
-        ):
+        if any(v.startswith("SECRET:") or v.startswith("SYSTEM_LEAK:") for v in violations):
             return 1.0
         if any(v.startswith("PII:") for v in violations):
             return 0.85
