@@ -105,10 +105,7 @@ def scan_retrieved_document(document: str, source: str = "unknown") -> RAGScanRe
         imperative_count = sum(
             1
             for s in sentences
-            if any(
-                s.lower().startswith(kw) or f" {kw} " in s.lower()
-                for kw in imperative_keywords
-            )
+            if any(s.lower().startswith(kw) or f" {kw} " in s.lower() for kw in imperative_keywords)
         )
         imperative_ratio = imperative_count / len(sentences)
         if imperative_ratio > 0.3:
