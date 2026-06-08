@@ -2,6 +2,7 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
 from src.pipeline import LLMGuardPipeline
 
 app = FastAPI(title="LLM-Guard-Scanner API")
@@ -33,7 +34,7 @@ async def scan_prompt(request: ScanRequest):
             pii_found=result.pii_found,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/health")
