@@ -8,6 +8,7 @@ OWASP Agentic Research Council formed June 4 2026 - no standards exist yet.
 """
 
 from __future__ import annotations
+
 import re
 from dataclasses import dataclass, field
 from enum import Enum
@@ -137,19 +138,15 @@ def scan_agent_message(
 
     # L4: Tool execution abuse - path traversal
     if tool_args:
-        for key, val in tool_args.items():
+        for _key, val in tool_args.items():
             if isinstance(val, str):
                 findings += _scan_patterns(val, _L4_PATH_PATTERNS, AgentLayer.TOOL)
 
     # L5: Inter-agent impersonation
     if caller_agent_id is not None:
-        findings += _scan_patterns(
-            content, _L5_IMPERSONATION_PATTERNS, AgentLayer.INTER_AGENT
-        )
+        findings += _scan_patterns(content, _L5_IMPERSONATION_PATTERNS, AgentLayer.INTER_AGENT)
         # Also scan content for impersonation claims
-        if re.search(
-            r"(orchestrator|master|admin|system)\s+agent", content, re.IGNORECASE
-        ):
+        if re.search(r"(orchestrator|master|admin|system)\s+agent", content, re.IGNORECASE):
             findings.append(
                 AgentFinding(
                     layer=AgentLayer.INTER_AGENT,
@@ -163,8 +160,6 @@ def scan_agent_message(
     if not findings:
         highest = "CLEAN"
     else:
-        highest = max(
-            findings, key=lambda f: _SEVERITY_ORDER.get(f.severity, 0)
-        ).severity
+        highest = max(findings, key=lambda f: _SEVERITY_ORDER.get(f.severity, 0)).severity
 
     return AgentScanResult(highest_severity=highest, findings=findings)
