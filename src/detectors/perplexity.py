@@ -4,6 +4,7 @@ Optional perplexity-based injection detection.
 The default path uses a lightweight character-entropy estimate.
 Set enable_model=True and install requirements-ml.txt to compute GPT-2 perplexity.
 """
+
 import math
 
 
