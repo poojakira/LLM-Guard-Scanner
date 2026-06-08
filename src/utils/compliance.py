@@ -12,9 +12,7 @@ from typing import Any, Dict
 
 
 class ComplianceLogger:
-    def __init__(
-        self, model_id: str = "llm-guard-scanner-v1", log_path: str = "compliance.log"
-    ):
+    def __init__(self, model_id: str = "llm-guard-scanner-v1", log_path: str = "compliance.log"):
         self.model_id = model_id
         self.log_path = log_path
 
