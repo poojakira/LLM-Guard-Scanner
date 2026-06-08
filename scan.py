@@ -32,9 +32,7 @@ def main():
     parser = argparse.ArgumentParser(description="LLM-Guard-Scanner (Enhanced v2026)")
     parser.add_argument("--input", type=str, help="Text to scan for prompt injection")
     parser.add_argument("--file", type=str, help="File with one prompt per line")
-    parser.add_argument(
-        "--output-scan", type=str, help="Scan LLM output for data leakage"
-    )
+    parser.add_argument("--output-scan", type=str, help="Scan LLM output for data leakage")
     parser.add_argument("--rag-scan", type=str, help="Scan document for RAG poisoning")
     parser.add_argument("--threshold", type=float, default=0.5)
     parser.add_argument("--semantic-threshold", type=float, default=0.7)
@@ -46,14 +44,10 @@ def main():
         injection_result = detect_prompt_injection(args.input, threshold=args.threshold)
 
         # 2. Deep Semantic Analysis
-        semantic_result = analyze_semantics(
-            args.input, threshold=args.semantic_threshold
-        )
+        semantic_result = analyze_semantics(args.input, threshold=args.semantic_threshold)
 
         is_blocked = injection_result.is_injection or semantic_result.is_adversarial
-        confidence = max(
-            injection_result.confidence, semantic_result.adversarial_intent_score
-        )
+        confidence = max(injection_result.confidence, semantic_result.adversarial_intent_score)
 
         # 3. Compliance Logging (EU AI Act Art 12)
         if is_blocked:
@@ -112,11 +106,7 @@ def main():
                 f"{', '.join(sorted(SUPPORTED_TEXT_EXTENSIONS))}",
                 file=sys.stderr,
             )
-        lines = [
-            ln.strip()
-            for ln in path.read_text(encoding="utf-8").splitlines()
-            if ln.strip()
-        ]
+        lines = [ln.strip() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
         blocked, total = 0, len(lines)
         for line in lines:
             inj = detect_prompt_injection(line, threshold=args.threshold)
