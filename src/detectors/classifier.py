@@ -35,9 +35,7 @@ class InjectionClassifier:
             from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
             self._tokenizer = AutoTokenizer.from_pretrained(self.model_path)
-            self._model = AutoModelForSequenceClassification.from_pretrained(
-                self.model_path
-            )
+            self._model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
             self._model.eval()
         except (ImportError, OSError) as exc:
             self._model_error = exc.__class__.__name__
@@ -55,9 +53,7 @@ class InjectionClassifier:
 
         import torch
 
-        inputs = self._tokenizer(
-            text, return_tensors="pt", truncation=True, max_length=512
-        )
+        inputs = self._tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
         with torch.no_grad():
             outputs = self._model(**inputs)
         probs = torch.softmax(outputs.logits, dim=-1)
