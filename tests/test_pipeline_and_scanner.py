@@ -6,7 +6,6 @@ fall back to heuristic paths that ship with the package.
 """
 
 import os
-import sys
 
 from src.detectors.canary import CanaryDetector
 from src.detectors.heuristics import suspicious_token_ratio
