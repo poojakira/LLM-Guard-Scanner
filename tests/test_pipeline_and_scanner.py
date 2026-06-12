@@ -8,12 +8,10 @@ fall back to heuristic paths that ship with the package.
 import os
 import sys
 
-sys.path.insert(0, ".")  # noqa: E402
-
-from src.detectors.canary import CanaryDetector  # noqa: E402
-from src.detectors.heuristics import suspicious_token_ratio  # noqa: E402
-from src.pipeline import LLMGuardPipeline, ScanResult  # noqa: E402
-from src.utils.compliance import ComplianceLogger, log_compliance_event  # noqa: E402
+from src.detectors.canary import CanaryDetector
+from src.detectors.heuristics import suspicious_token_ratio
+from src.pipeline import LLMGuardPipeline, ScanResult
+from src.utils.compliance import ComplianceLogger, log_compliance_event
 
 
 # ---------------------------------------------------------------------------
