@@ -89,3 +89,6 @@ python src/agentic_scanner.py --input examples/
 - [Not What You've Signed Up For: Compromising Real-World LLM-Integrated Applications — Greshake et al. (2023)](https://arxiv.org/abs/2302.12173)
 - [The Attacker Moves Second — Nasr et al. (2025)](https://arxiv.org/abs/2502.16269)
 - [Prompt Injection Attacks against LLM-Integrated Applications — Greshake et al. (2023)](https://arxiv.org/abs/2302.12173)
+
+
+<!-- ci-trigger: 1781234403 -->
