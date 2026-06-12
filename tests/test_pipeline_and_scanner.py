@@ -12,6 +12,7 @@ from src.detectors.heuristics import suspicious_token_ratio
 from src.pipeline import LLMGuardPipeline, ScanResult
 from src.utils.compliance import ComplianceLogger, log_compliance_event
 
+
 # ---------------------------------------------------------------------------
 # CanaryDetector
 # ---------------------------------------------------------------------------
@@ -65,6 +66,7 @@ class TestCanaryDetector:
         result = self.cd.check_input_for_extraction("What is 2+2?")
         assert result["method"] == "canary-extraction"
 
+
 # ---------------------------------------------------------------------------
 # Heuristics
 # ---------------------------------------------------------------------------
@@ -87,6 +89,7 @@ class TestHeuristics:
     def test_case_insensitive(self):
         ratio = suspicious_token_ratio("IGNORE BYPASS SYSTEM")
         assert ratio == 1.0
+
 
 # ---------------------------------------------------------------------------
 # ComplianceLogger
@@ -148,6 +151,7 @@ class TestComplianceLogger:
         logger.log_event("test", "LOW", "none", "hello", {})  # Should not raise
         captured = capsys.readouterr()
         assert "COMPLIANCE_LOG_FAILURE" in captured.err
+
 
 # ---------------------------------------------------------------------------
 # LLMGuardPipeline (enable_ml=False — no model downloads)
@@ -238,6 +242,7 @@ class TestPipeline:
         assert len(result.detections) >= 1
         assert result.is_blocked is True
 
+
 # ---------------------------------------------------------------------------
 # AgentScanner
 # ---------------------------------------------------------------------------
@@ -299,11 +304,13 @@ class TestAgentScanner:
         for finding in result.findings:
             assert len(finding.evidence) <= 120
 
+
 # ---------------------------------------------------------------------------
 # ScanResult helper
 # ---------------------------------------------------------------------------
 def _safe_passthrough(self):
     """Convenience helper used in tests."""
     return len(self.detections) == 0
+
 
 ScanResult.is_safe_passthrough = _safe_passthrough
